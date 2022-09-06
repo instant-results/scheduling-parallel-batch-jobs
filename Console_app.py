@@ -1,8 +1,8 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
-
 import time
+from tkinter.messagebox import showerror
 
 import Michigan
 import Pitt_direct
@@ -10,14 +10,14 @@ import Pitt_perm
 import Common
 
 
-def close():
+def close(win):
     """
     Close window function
     """
     global app_running
     if messagebox.askokcancel("Exit", "Do you want to exit?"):
         app_running = False
-        root.destroy()
+        win.destroy()
 
 
 def choices(x):
@@ -41,62 +41,121 @@ def choices(x):
         time.sleep(1)
 
 
-def calculate():
-    index = algorithm_dropdown.current() + 1
-    algorithm = algorithm_dropdown.get()  # for optional algorithm window name
+def calculate(algorithm_variables, list_algorithms):
+    """
+    Getting all needed parameters and activating calculation process with particular algorithm
+    """
+    try:
+        chosen_alg = algorithm_variables.get()
+        index = int(list_algorithms.get(chosen_alg))
+        if type(index) == 'NonType':
+            raise TypeError
 
-    print(
-        f"==================================\n"
-        f"Algorithm: {algorithm}\n"
-        f"Scheduling mode: {Common.scheduling_modes[Common.scheduling_mode]}\n"
-        f"Output mode: {Common.output_modes[Common.output_mode]}\n"
-        f"==================================")
+        print(
+            f"Algorithm: {chosen_alg}\n"
+            f"Scheduling mode: {Common.scheduling_modes[Common.scheduling_mode]}\n"
+            f"Output mode: {Common.output_modes[Common.output_mode]}\n")
 
-    choices(index)
+        choices(index)
+
+    except TypeError:
+        showerror(title="Error!", message="You need to choose an algorithm!")
+
+    result_window = tk.Toplevel(main)
+    result_window.title("Results")
+    result_window.geometry('800x600')
+
+
+def get_current_value():
+    return '{}'.format(current_num_iter.get())
+
+
+def slider_change(event):
+    current_number_iterations.configure(text=f"Number of iterations: {get_current_value()}")
 
 
 if __name__ == "__main__":
-    root = tk.Tk()
+    app_title = "Genetic algorithm simulator"
     app_running = True
+    options = {'padx': 15, 'pady': 15}
 
-    root.protocol("WM_DELETE_WINDOW", close)
-    root.title("Scheduling parallel batch jobs")
-    root.geometry('500x300')
-    options = {'padx': 10, 'pady': 10}
+    main = tk.Tk()
+    main.protocol("WM_DELETE_WINDOW", lambda: close(main))
 
-    root.resizable(False, False)
+    main.title(app_title)
+    main.geometry('800x550')
+    style = ttk.Style(main)
 
-    algorithm_list_label = ttk.Label(root, text="Choose an algorithm:")
-    algorithm_list_label.grid(column=0, row=0, sticky=tk.W, **options)
+    main.tk.call('source', 'azure/azure.tcl')
+    style.theme_use('azure')
 
-    var = tk.StringVar()
-    algorithm_dropdown = ttk.Combobox(root, width=34, textvariable=var)
-    algorithm_dropdown['values'] = (
-        "Permutation-based Pitt",
-        "Direct Pitt",
-        "Michigan")
+    main.resizable(False, False)
 
-    algorithm_dropdown['state'] = 'readonly'
-    algorithm_dropdown.grid(column=1, row=0, columnspan=3, **options)
+    current_num_iter = tk.IntVar()
 
-    scheduling_mode_label = ttk.Label(root, text="Scheduling mode")
-    scheduling_mode_label.grid(column=0, row=1, sticky=tk.W, **options)
+    left_frame = ttk.Frame(main)
+    left_frame.grid(column=0, row=0, padx=10, pady=10)
 
-    scheduling_mode_status = ttk.Label(root, text="Status: " + Common.scheduling_modes[Common.scheduling_mode])
-    scheduling_mode_status.place(x=150, y=50)
+    middle_frame = ttk.Frame(main)
+    middle_frame.grid(column=1, row=0, sticky=tk.N, padx=10, pady=10)
 
-    change_scheduling_mode_button = ttk.Button(root, text="Change", command=lambda: choices(4))
-    change_scheduling_mode_button.place(x=300, y=47)
+    right_frame = ttk.Frame(main)
+    right_frame.grid(column=2, row=0, sticky=tk.N, padx=10, pady=10)
 
-    output_mode_label = ttk.Label(root, text="Output mode")
-    output_mode_label.grid(column=0, row=2, sticky=tk.W, **options)
+    algorithm_frame = ttk.LabelFrame(left_frame, text='Choose an algorithm')
+    algorithm_frame.grid(column=0, row=0, **options)
 
-    output_mode_status = ttk.Label(root, text="Status: " + Common.output_modes[Common.output_mode])
-    output_mode_status.place(x=150, y=90)
+    algorithm_var = tk.StringVar()
+    algorithms = {'Permutation-based Pitt': '1', 'Direct Pitt': '2', 'Michigan': '3'}
 
-    change_output_mode_button = ttk.Button(root, text="Change", command=lambda: choices(5))
-    change_output_mode_button.place(x=300, y=87)
+    grid_row = 0
+    for algorithm in algorithms:
+        radio = ttk.Radiobutton(algorithm_frame, text=algorithm, value=algorithm, variable=algorithm_var)
+        radio.grid(column=0, row=grid_row, sticky=tk.W, ipadx=10, ipady=10, padx=10)
 
-    run_button = tk.Button(root, text="Calculate", command=calculate)
-    run_button.grid(column=2, row=3, **options)
-    root.mainloop()
+        grid_row += 1
+
+    scheduling_mode_frame = ttk.Labelframe(left_frame, text="Scheduling mode")
+    scheduling_mode_frame.grid(column=0, row=1, sticky=tk.NSEW, **options)
+
+    scheduling_mode_status = ttk.Label(scheduling_mode_frame, width=23, anchor=tk.CENTER,
+                                       text="Status: " + Common.scheduling_modes[Common.scheduling_mode])
+    scheduling_mode_status.grid(column=0, row=0, **options)
+
+    change_scheduling_mode_button = ttk.Button(scheduling_mode_frame, text="Change", command=lambda: choices(4))
+    change_scheduling_mode_button.grid(column=0, row=1, **options)
+
+    output_mode_frame = ttk.Labelframe(left_frame, text="Output mode")
+    output_mode_frame.grid(column=0, row=2, sticky=tk.NSEW, **options)
+
+    output_mode_status = ttk.Label(output_mode_frame, width=23, anchor=tk.CENTER,
+                                   text="Status: " + Common.output_modes[Common.output_mode])
+    output_mode_status.grid(column=0, row=0, sticky=tk.NSEW, **options)
+
+    change_output_mode_button = ttk.Button(output_mode_frame, text="Change", command=lambda: choices(5))
+    change_output_mode_button.grid(column=0, row=1, **options)
+
+    iterations_num_frame = ttk.Labelframe(middle_frame, text="Simulation size")
+    iterations_num_frame.grid(column=1, row=0, **options)
+
+    calculate_btn_frame = ttk.Frame(middle_frame)
+    calculate_btn_frame.grid(column=1, row=1, sticky=tk.NSEW, **options)
+
+    current_number_iterations = ttk.Label(iterations_num_frame, text=f'Number of iterations: {1}')
+    current_number_iterations.grid(column=1, row=1, sticky=tk.NSEW, **options)
+
+    iter_num_scale = ttk.Scale(iterations_num_frame, from_=1, to=100, orient='horizontal', command=slider_change,
+                               variable=current_num_iter, length=200)
+    iter_num_scale.grid(column=1, row=0, **options)
+
+    run_button = ttk.Button(calculate_btn_frame, text="Calculate", style='Accentbutton',
+                            command=lambda: calculate(algorithm_var, algorithms), width=30)
+    run_button.grid(column=1, row=1, **options)
+
+    data_generator = ttk.LabelFrame(right_frame, text="Data Generator")
+    data_generator.grid(column=0, row=0, **options)
+
+    lab = ttk.Label(data_generator, text='Generator')
+    lab.grid(column=0, row=0, **options)
+
+    main.mainloop()
