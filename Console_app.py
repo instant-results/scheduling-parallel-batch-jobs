@@ -8,6 +8,7 @@ import Michigan
 import Pitt_direct
 import Pitt_perm
 import Common
+import plot_creating
 
 
 def close(win):
@@ -20,15 +21,15 @@ def close(win):
         win.destroy()
 
 
-def choices(x):
+def choices(x, num_iter=1):
     if x == 1:
-        Pitt_perm.main(),
+        Pitt_perm.main(num_iter)
         time.sleep(1)
     elif x == 2:
-        Pitt_direct.main(),
+        Pitt_direct.main(num_iter)
         time.sleep(1)
     elif x == 3:
-        Michigan.main(),
+        Michigan.main(num_iter)
         time.sleep(1)
     elif x == 4:
         Common.scheduling_mode = Common.ENERGY_MODE if Common.scheduling_mode == Common.MAKESPAN_MODE else Common.MAKESPAN_MODE
@@ -41,29 +42,50 @@ def choices(x):
         time.sleep(1)
 
 
+def change_state():
+    if run_button['state'] == "DISABLED":
+        run_button.config(text="Calculate")
+        run_button['state'] = "ACTIVE"
+    else:
+        run_button.config(text="Calculating...")
+        run_button['state'] = "DISABLED"
+
+    main.update_idletasks()
+    main.update()
+
+
 def calculate(algorithm_variables, list_algorithms):
     """
     Getting all needed parameters and activating calculation process with particular algorithm
     """
+
+    num_iter = current_num_iter.get()
     try:
         chosen_alg = algorithm_variables.get()
         index = int(list_algorithms.get(chosen_alg))
         if type(index) == 'NonType':
             raise TypeError
 
-        print(
-            f"Algorithm: {chosen_alg}\n"
-            f"Scheduling mode: {Common.scheduling_modes[Common.scheduling_mode]}\n"
-            f"Output mode: {Common.output_modes[Common.output_mode]}\n")
+        change_state()
 
-        choices(index)
+        parameters = f"Algorithm: {chosen_alg}\n" \
+                     f"Scheduling mode: {Common.scheduling_modes[Common.scheduling_mode]}\n" \
+                     f"Output mode: {Common.output_modes[Common.output_mode]}\n"
+        print(parameters)
+
+        choices(index, num_iter)
+
+        list_alg = ['pitt_perm', 'pitt_direct', 'michigan']
+
+        result_window = tk.Toplevel(main)
+        result_window.title("Results")
+        result_window.geometry('800x600')
+        plot_creating.create_plot(list_alg[index-1], parameters, result_window)
+
+        change_state()
 
     except TypeError:
         showerror(title="Error!", message="You need to choose an algorithm!")
-
-    result_window = tk.Toplevel(main)
-    result_window.title("Results")
-    result_window.geometry('800x600')
 
 
 def get_current_value():
@@ -159,3 +181,4 @@ if __name__ == "__main__":
     lab.grid(column=0, row=0, **options)
 
     main.mainloop()
+

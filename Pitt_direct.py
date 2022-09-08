@@ -15,6 +15,7 @@ import csv
 from collections import Counter
 
 import Common
+import Console_app
 
 ITERATIONS_NUMBER = 100
 POPULATION_SIZE = 10
@@ -409,7 +410,7 @@ def write_to_csv(best_score, bestSchedule, etc, machines, max_time):
             writer.writerow(row)
 
 
-def scheduleTasks(numberOfIterations, populationSize):
+def scheduleTasks(num_iter, numberOfIterations, populationSize):
     if populationSize % 2 != 0:
         print("Population size should be even")
         return
@@ -442,7 +443,7 @@ def scheduleTasks(numberOfIterations, populationSize):
         print("Best makespan value: " + "{0:.2f}".format(bestAdaptationRate) + " energy usage: " + "{0:.2f}".format(otherForBest))
     elif Common.scheduling_mode == Common.ENERGY_MODE:
         print("Best energy usage: " + "{0:.2f}".format(bestAdaptationRate) + " makespan: " + "{0:.2f}".format(otherForBest))
-    open('results/result_pitt_direct', 'a').write(str(bestAdaptationRate) + "," + str(otherForBest) + "\n")
+    # open('results/result_pitt_direct.csv', 'a').write(str(bestAdaptationRate) + "," + str(otherForBest) + "\n")
 
     if Common.scheduling_mode == Common.MAKESPAN_MODE:
         maxTime = bestAdaptationRate
@@ -450,12 +451,18 @@ def scheduleTasks(numberOfIterations, populationSize):
         maxTime = otherForBest
     pretty_print(bestSchedule, etcMatrix, machines, maxTime)
     write_to_csv(bestAdaptationRate, bestSchedule, etcMatrix, machines, maxTime)
+    return bestPopulation
 
 
-def main():
-    # scheduleTasks(ITERATIONS_NUMBER, POPULATION_SIZE)
-    security_features = Common.read_security_features()
+def main(num_iter):
+    with open('results/data_to_plot_pitt_direct.csv', 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile, delimiter=';', quoting=csv.QUOTE_NONNUMERIC)
+        for i in range(1, num_iter+1):
+
+            bestPopulation = scheduleTasks(num_iter, ITERATIONS_NUMBER, POPULATION_SIZE)
+            # security_features = Common.read_security_features()
+            writer.writerow([i, ('%f' % bestPopulation).replace('.', ',')])
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main(num_iter)
