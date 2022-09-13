@@ -6,6 +6,7 @@ import pandas as pd
 from sklearn.utils import shuffle
 
 import Common
+import Console_app
 
 columns = ''
 
@@ -405,7 +406,7 @@ def write_to_csv(best_score, population, etc, machines, max_time):
     """
     with open('results/output_michigan.csv', 'w', newline='') as csvfile:
         writer = csv.writer(csvfile, delimiter=';', quoting=csv.QUOTE_NONNUMERIC)
-        writer.writerow(['{} optimized'.format(Common.scheduling_modes[Common.scheduling_mode]), ('%f' % best_score).replace('.', ',')])
+        writer.writerow(['{} optimized'.format(Common.scheduling_modes[Common.scheduling_mode]), ('%f' % best_score)])
         
         first_row = ['Machines / Tasks']
 
@@ -428,61 +429,72 @@ def write_to_csv(best_score, population, etc, machines, max_time):
                 if np.isnan(task_id):
                     break
                 if Common.output_mode == Common.MAKESPAN_O_MODE:
-                    row.append(str(str(int(task_id)) + ' (' + ('%.1f' % etc[int(task_id)][int(machine_id)]).replace('.', ',') + ')'))  # dodanie do wiersza task id i czasu wykonywania
+                    row.append(str(str(int(task_id)) + ' (' + ('%.1f' % etc[int(task_id)][int(machine_id)]) + ')'))  # dodanie do wiersza task id i czasu wykonywania
                 elif Common.output_mode == Common.ENERGY_O_MODE:
                     time += etc[int(task_id)][int(machine_id)]
-                    row.append(str(str(int(task_id)) + ' (' + (('%.1f' % (etc[int(task_id)][int(machine_id)] * machines.values[machine_id][2]))).replace('.', ',') + ')'))  
+                    row.append(str(str(int(task_id)) + ' (' + (('%.1f' % (etc[int(task_id)][int(machine_id)] * machines.values[machine_id][2]))) + ')'))
                 elif Common.output_mode == Common.ALL_O_MODE:
                     time += etc[int(task_id)][int(machine_id)]
-                    row.append(str(str(int(task_id)) + ' (' + ('%.1f' % etc[int(task_id)][int(machine_id)]).replace('.', ',') + '|' + (('%.1f' % (etc[int(task_id)][int(machine_id)] * machines.values[machine_id][2]))).replace('.', ',') + ')'))
+                    row.append(str(str(int(task_id)) + ' (' + ('%.1f' % etc[int(task_id)][int(machine_id)]) + '|' + (('%.1f' % (etc[int(task_id)][int(machine_id)] * machines.values[machine_id][2]))) + ')'))
 
             if Common.output_mode == Common.ENERGY_O_MODE or Common.output_mode == Common.ALL_O_MODE:
                 time = max_time - time
-                row.append(('%.1f' % time).replace('.', ',') + '|' + ('%.1f' % (time * machines.values[machine_id][3])).replace('.', ','))
+                row.append(('%.1f' % time) + '|' + ('%.1f' % (time * machines.values[machine_id][3])))
             writer.writerow(row)  # zapisanie calego wiesza
 
 
-def main():
-    np.random.seed(0)  # ustawienie ziarna
+def main(num_iter):
 
-    # wczytanie cech bezpieczeństwa
-    features = Common.read_security_features()
+    with open('results/data_to_plot_michigan.csv', 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile, delimiter=';', quoting=csv.QUOTE_NONNUMERIC)
 
-    # wczytanie danych z plikow
-    machines = Common.read_machines(features)
-    tasks = Common.read_tasks(features)
+        first_row = ['iteration', 'best_makespan']
+        writer.writerow(first_row)
 
-    # wyznaczenie nazw kolumn w harmonogramie zadan
-    global columns
-    columns = ['task_' + str(i) for i in range(0, len(tasks))]
+        for i in range(1, num_iter+1):
 
-    # machines = pd.DataFrame(data=[[0, 1], [1, 1], [2, 1], [3, 1]])
-    # print(machines)
-    # tasks = pd.DataFrame(data=[[0, 1], [1, 2], [2, 3], [3, 4],
-    #                            [4, 5], [5, 6], [6, 7], [7, 8],
-    # [8, 9], [9, 10], [10, 11], [11, 12]])
+            np.random.seed(0)  # ustawienie ziarna
 
-    # generacja macierzy etc
-    etc = Common.generate_etc_matrix(machines, tasks)
+            # wczytanie cech bezpieczeństwa
+            features = Common.read_security_features()
 
-    # wykonanie algorytmu genetycznego
-    pop, best_score, other_param = alg(machines, tasks, 100, 0.01, etc)  # 1% mutation chance
+            # wczytanie danych z plikow
+            machines = Common.read_machines(features)
+            tasks = Common.read_tasks(features)
 
-    # wypisanie wyniku
-    # print_no_time(pop, etc)
+            # wyznaczenie nazw kolumn w harmonogramie zadan
+            global columns
+            columns = ['task_' + str(i) for i in range(0, len(tasks))]
 
-    if Common.scheduling_mode == Common.MAKESPAN_MODE:
-        max_time = best_score
-    elif Common.scheduling_mode == Common.ENERGY_MODE:
-        max_time = other_param
-    # wypisanie wyniku
-    pretty_print(pop, etc, machines, max_time)
+            # machines = pd.DataFrame(data=[[0, 1], [1, 1], [2, 1], [3, 1]])
+            # print(machines)
+            # tasks = pd.DataFrame(data=[[0, 1], [1, 2], [2, 3], [3, 4],
+            #                            [4, 5], [5, 6], [6, 7], [7, 8],
+            # [8, 9], [9, 10], [10, 11], [11, 12]])
 
-    # zapis wyniku do pliku csv
-    write_to_csv(best_score, pop.sort_index(), etc, machines, max_time)
+            # generacja macierzy etc
+            etc = Common.generate_etc_matrix(machines, tasks)
 
-    open('results/result_michigan', 'a').write(str(best_score) + "," + str(other_param) + "\n")
+            # wykonanie algorytmu genetycznego
+            pop, best_score, other_param = alg(machines, tasks, 100, 0.01, etc)  # 1% mutation chance
+
+            # wypisanie wyniku
+            # print_no_time(pop, etc)
+
+            if Common.scheduling_mode == Common.MAKESPAN_MODE:
+                max_time = best_score
+            elif Common.scheduling_mode == Common.ENERGY_MODE:
+                max_time = other_param
+            # wypisanie wyniku
+            pretty_print(pop, etc, machines, max_time)
+
+            # zapis wyniku do pliku csv
+            write_to_csv(best_score, pop.sort_index(), etc, machines, max_time)
+
+            # open('results/result_michigan.csv', 'a').write(str(best_score) + "," + str(other_param) + "\n")
+            writer.writerow([i, ('%f' % best_score)])
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
+

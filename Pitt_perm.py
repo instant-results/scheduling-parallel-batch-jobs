@@ -5,6 +5,7 @@ from sklearn.utils import shuffle
 import random
 import math
 import Common
+import Console_app
 
 ITERATIONS_NUMBER = 100
 POPULATION_SIZE = 10
@@ -427,7 +428,7 @@ def write_to_csv(best_score, best_individual, etc, machines, max_time):
 
     with open('results/output_pitt_perm.csv', 'w', newline='') as csvfile:
         writer = csv.writer(csvfile, delimiter=';', quoting=csv.QUOTE_NONNUMERIC)
-        writer.writerow(['{} optimized'.format(Common.scheduling_modes[Common.scheduling_mode]), ('%f' % best_score).replace('.', ',')])
+        writer.writerow(['{} optimized'.format(Common.scheduling_modes[Common.scheduling_mode]), ('%f' % best_score)])
 
         first_row = ['Machines / Tasks']
 
@@ -447,53 +448,62 @@ def write_to_csv(best_score, best_individual, etc, machines, max_time):
                 if np.isnan(i):
                     break
                 if Common.output_mode == Common.MAKESPAN_O_MODE:
-                    row.append(str(str(int(tasks_of_machines[machine_id][i])) + ' (' + ('%.1f' % etc[int(i)][int(machine_id)]).replace('.', ',') + ')'))
+                    row.append(str(str(int(tasks_of_machines[machine_id][i])) + ' (' + ('%.1f' % etc[int(i)][int(machine_id)]) + ')'))
                 elif Common.output_mode == Common.ENERGY_O_MODE:
                     time += etc[int(i)][int(machine_id)]
-                    row.append(str(str(int(tasks_of_machines[machine_id][i])) + ' (' + (('%.1f' % (etc[int(i)][int(machine_id)] * machines.values[machine_id][2]))).replace('.', ',') + ')'))
+                    row.append(str(str(int(tasks_of_machines[machine_id][i])) + ' (' + (('%.1f' % (etc[int(i)][int(machine_id)] * machines.values[machine_id][2]))) + ')'))
                 elif Common.output_mode == Common.ALL_O_MODE:
                     time += etc[int(i)][int(machine_id)]
-                    row.append(str(str(int(tasks_of_machines[machine_id][i])) + ' (' + ('%.1f' % etc[int(i)][int(machine_id)]).replace('.', ',') + '|' + (('%.1f' % (etc[int(i)][int(machine_id)] * machines.values[machine_id][2]))).replace('.', ',') + ')'))
+                    row.append(str(str(int(tasks_of_machines[machine_id][i])) + ' (' + ('%.1f' % etc[int(i)][int(machine_id)]) + '|' + (('%.1f' % (etc[int(i)][int(machine_id)] * machines.values[machine_id][2])))+ ')'))
 
             if Common.output_mode == Common.ENERGY_O_MODE or Common.output_mode == Common.ALL_O_MODE:
                 time = max_time - time
-                row.append(('%.1f' % time).replace('.', ',') + '|' + ('%.1f' % (time * machines.values[machine_id][3])).replace('.', ','))
+                row.append(('%.1f' % time) + '|' + ('%.1f' % (time * machines.values[machine_id][3])))
             writer.writerow(row)
 
 
-def main():
-    try:
-        etc = Common.generate_etc_matrix(machines, tasks)
-        population = generate_population(POPULATION_SIZE) #pierwszy parametr to liczba osobników
-        best_score, other_param = get_highest_makespan_for_individual(etc, population[0], machines)  # makespan dla pierwszego osobnika
-        print("Initial best {}: {} | {}: {}"
-              .format(Common.scheduling_modes[Common.scheduling_mode], str(best_score), Common.scheduling_modes[(Common.scheduling_mode+1)%2], str(other_param)))
-        for i in range(ITERATIONS_NUMBER): # liczba epok
-            population = crossover(population)
-            population = mutate_population(population)
-            # print(population)
-            current, best_individual, current_other = population_makespan(etc, population, machines)
-            if best_score > current:
-                best_score = current
-                other_param = current_other
-                print("[",i,"] Current best {}: {} | {}: {}"
+def main(num_iter):
+    with open('results/data_to_plot_pitt_perm.csv', 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile, delimiter=';', quoting=csv.QUOTE_NONNUMERIC)
+
+        first_row = ['iteration', 'best_makespan']
+        writer.writerow(first_row)
+
+        for _ in range(1, num_iter + 1):
+            try:
+                etc = Common.generate_etc_matrix(machines, tasks)
+                population = generate_population(POPULATION_SIZE) #pierwszy parametr to liczba osobników
+                best_score, other_param = get_highest_makespan_for_individual(etc, population[0], machines)  # makespan dla pierwszego osobnika
+                print("Initial best {}: {} | {}: {}"
                       .format(Common.scheduling_modes[Common.scheduling_mode], str(best_score), Common.scheduling_modes[(Common.scheduling_mode+1)%2], str(other_param)))
-                
-        print("Best {}: {} | {}: {}"
-              .format(Common.scheduling_modes[Common.scheduling_mode], str(best_score), Common.scheduling_modes[(Common.scheduling_mode+1)%2], str(other_param)))
-        open('results/result_pitt_perm', 'a').write(str(best_score) + "," + str(other_param) + "\n")
-    except KeyboardInterrupt:
-        # niszczenie obiektow itp
-        # (bezpieczne zamkniecie)
-        pass
+                for i in range(ITERATIONS_NUMBER): # liczba epok
+                    population = crossover(population)
+                    population = mutate_population(population)
+                    # print(population)
+                    current, best_individual, current_other = population_makespan(etc, population, machines)
+                    if best_score > current:
+                        best_score = current
+                        other_param = current_other
+                        print("[",i,"] Current best {}: {} | {}: {}"
+                              .format(Common.scheduling_modes[Common.scheduling_mode], str(best_score), Common.scheduling_modes[(Common.scheduling_mode+1)%2], str(other_param)))
 
-    if Common.scheduling_mode == Common.MAKESPAN_MODE:
-        max_time = best_score
-    elif Common.scheduling_mode == Common.ENERGY_MODE:
-        max_time = other_param
-    pretty_print(best_individual, etc, machines, max_time)
-    write_to_csv(best_score, best_individual, etc, machines, max_time)
+                print("Best {}: {} | {}: {}"
+                      .format(Common.scheduling_modes[Common.scheduling_mode], str(best_score), Common.scheduling_modes[(Common.scheduling_mode+1)%2], str(other_param)))
+                # open('results/result_pitt_perm.csv', 'a').write(str(best_score) + "," + str(other_param) + "\n")
+            except KeyboardInterrupt:
+                # niszczenie obiektow itp
+                # (bezpieczne zamkniecie)
+                pass
+
+            if Common.scheduling_mode == Common.MAKESPAN_MODE:
+                max_time = best_score
+            elif Common.scheduling_mode == Common.ENERGY_MODE:
+                max_time = other_param
+            pretty_print(best_individual, etc, machines, max_time)
+            write_to_csv(best_score, best_individual, etc, machines, max_time)
+
+            writer.writerow([i, ('%f' % best_score)])
 
 
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+#     main()
