@@ -59,8 +59,10 @@ def calculate(algorithm_variables, list_algorithms):
     Getting all needed parameters and activating calculation process with particular algorithm
     """
 
-    num_iter = current_num_iter.get()
     try:
+        if validate_iterations():
+            raise ValueError
+        num_iter = current_num_iter.get()
         chosen_alg = algorithm_variables.get()
         index = int(list_algorithms.get(chosen_alg))
         if type(index) == 'NonType':
@@ -86,14 +88,22 @@ def calculate(algorithm_variables, list_algorithms):
 
     except TypeError:
         showerror(title="Error!", message="You need to choose an algorithm!")
+    except ValueError:
+        showerror(title="Error!", message="Number of iterations must be an INTEGER in range from 1 to 100!")
 
 
 def get_current_value():
     return '{}'.format(current_num_iter.get())
 
 
-def slider_change(event):
-    current_number_iterations.configure(text=f"Number of iterations: {get_current_value()}")
+def validate_iterations():
+    try:
+        value = int(iter_num_var.get())
+        if 0 >= value or value > 100:
+            return True
+    except ValueError:
+        return True
+    return False
 
 
 if __name__ == "__main__":
@@ -163,12 +173,11 @@ if __name__ == "__main__":
     calculate_btn_frame = ttk.Frame(middle_frame)
     calculate_btn_frame.grid(column=1, row=1, sticky=tk.NSEW, **options)
 
-    current_number_iterations = ttk.Label(iterations_num_frame, text=f'Number of iterations: {1}')
-    current_number_iterations.grid(column=1, row=1, sticky=tk.NSEW, **options)
+    current_number_iterations = ttk.Label(iterations_num_frame, text=f'Enter the number of iterations:')
+    current_number_iterations.grid(column=1, row=0, sticky=tk.NSEW, **options)
 
-    iter_num_scale = ttk.Scale(iterations_num_frame, from_=1, to=100, orient='horizontal', command=slider_change,
-                               variable=current_num_iter, length=200)
-    iter_num_scale.grid(column=1, row=0, **options)
+    iter_num_var = ttk.Entry(iterations_num_frame, textvariable=current_num_iter, justify="right")
+    iter_num_var.grid(column=1, row=1, **options)
 
     run_button = ttk.Button(calculate_btn_frame, text="Calculate", style='Accentbutton',
                             command=lambda: calculate(algorithm_var, algorithms), width=30)
