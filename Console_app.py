@@ -84,6 +84,8 @@ def calculate(algorithm_variables, list_algorithms):
         result_window.geometry('800x600')
         plot_creating.create_plot(list_alg[index-1], parameters, result_window)
 
+        plot_creating.draw_schedule(list_alg[index - 1])
+
         change_state()
 
     except TypeError:
@@ -94,6 +96,28 @@ def calculate(algorithm_variables, list_algorithms):
 
 def get_current_value():
     return '{}'.format(current_num_iter.get())
+
+
+def get_max_sum_in_row(tab2d):
+    max = 0
+    max_machine_lp = 0;
+    for row in tab2d:
+        sum = 0
+        for pair in row:
+            if pair[0] > max_machine_lp:
+                max_machine_lp = pair[0]
+            sum = sum + pair[1]
+        if sum > max:
+            max = sum
+    return max, max_machine_lp + 1
+
+
+def generate_colors(size):
+    from random import randint
+    colors = []
+    for i in range(size):
+        colors.append('#%06X' % randint(0, 0xFFFFFF))
+    return colors
 
 
 def validate_iterations():
